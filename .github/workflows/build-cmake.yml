@@ -91,6 +91,20 @@ jobs:
           curl --create-dirs -o include\tsl\platform\ctstring.h %TF_TAG%/third_party/xla/third_party/tsl/tsl/platform/ctstring.h
           curl --create-dirs -o include\tsl\platform\ctstring_internal.h %TF_TAG%/third_party/xla/third_party/tsl/tsl/platform/ctstring_internal.h
 
+      # We install Python manually, because actions/setup-python doesn't install the debug binaries.
+      # https://github.com/actions/setup-python/issues/86
+      # https://github.com/actions/runner-images/issues/786#issuecomment-620524456
+
+      - name: Install Python 3.12.2 (x64)
+        run: |
+          cd external
+          curl -L -o python-3.12.2-amd64.exe https://www.python.org/ftp/python/3.12.2/python-3.12.2-amd64.exe
+          Start-Process -FilePath python-3.12.2-amd64.exe -ArgumentList "/quiet Include_debug=1 Include_dev=1 Include_lib=1 Include_pip=1 PrependPath=1 CompileAll=1 InstallAllUsers=0" -Verb runas -Wait
+        shell: pwsh
+
+      - name: Install numpy
+        run: C:/Users/runneradmin/AppData/Local/Programs/Python/Python312/python.exe -m pip install numpy
+
       - name: Install Eigen3
         run: |
           cd external
@@ -156,7 +170,7 @@ jobs:
       - name: Build Essentia
         run: |
           set PATH=%PATH%;%CD%\external\bin
-          cmake -B build -DUSE_TENSORFLOW=ON -DCMAKE_PREFIX_PATH=%CD%\external
+          cmake -B build -DBUILD_PYTHON_BINDINGS=ON -DUSE_TENSORFLOW=ON -DCMAKE_PREFIX_PATH=%CD%\external
           cmake --build build --config ${{env.BUILD_TYPE}} --parallel
 
       - name: Test Essentia
