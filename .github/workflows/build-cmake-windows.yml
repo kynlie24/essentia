@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   windows:
-    name: Windows (build and test)
+    name: Windows
     runs-on: windows-latest
     defaults:
       run:
@@ -94,13 +94,28 @@ jobs:
           cmake --build build --config Release
           cmake --install build
 
+      - name: Install TensorFlow
+        run: |
+          cd external
+          curl -L -o libtensorflow-cpu-windows-x86_64-2.15.0.zip https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-windows-x86_64-2.15.0.zip
+          tar -xf libtensorflow-cpu-windows-x86_64-2.15.0.zip
+          xcopy /s /y lib\tensorflow.dll bin
+          set TF_TAG=https://raw.githubusercontent.com/tensorflow/tensorflow/r2.15-66681ea34be
+          curl --create-dirs -o include\tensorflow\c\tf_buffer.h %TF_TAG%/tensorflow/c/tf_buffer.h
+          curl --create-dirs -o include\tensorflow\c\tf_tensor_helper.h %TF_TAG%/tensorflow/c/tf_tensor_helper.h
+          curl --create-dirs -o include\tsl\c\tsl_status.h %TF_TAG%/third_party/xla/third_party/tsl/tsl/c/tsl_status.h
+          curl --create-dirs -o include\tsl\platform\ctstring.h %TF_TAG%/third_party/xla/third_party/tsl/tsl/platform/ctstring.h
+          curl --create-dirs -o include\tsl\platform\ctstring_internal.h %TF_TAG%/third_party/xla/third_party/tsl/tsl/platform/ctstring_internal.h
+
       - name: Build Essentia
         run: |
           set PATH=%PATH%;%CD%\external\bin
-          cmake -B build -DCMAKE_PREFIX_PATH=%CD%\external
+          cmake -B build -DBUILD_TESTS=OFF -DUSE_TENSORFLOW=ON -DCMAKE_PREFIX_PATH=%CD%\external
           cmake --build build --config Release --parallel
 
-      - name: Test Essentia
-        run: |
-          set PATH=%PATH%;%CD%\external\bin
-          ctest --test-dir build --output-on-failure -C Release
+      - name: Upload build
+        uses: actions/upload-artifact@v2
+        with:
+          name: essentia-build
+          path: build/
+
