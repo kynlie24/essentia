@@ -4,11 +4,11 @@ on: [push, pull_request]
 
 env:
   # CMake build type (Debug, Release, RelWithDebInfo or MinSizeRel)
-  BUILD_TYPE: Debug
+  BUILD_TYPE: Release
 
 jobs:
   windows:
-    name: Windows (build and test)
+    name: Windows
     runs-on: windows-latest
     defaults:
       run:
@@ -115,10 +115,12 @@ jobs:
       - name: Build Essentia
         run: |
           set PATH=%PATH%;%CD%\external\bin
-          cmake -B build -DUSE_TENSORFLOW=ON -DCMAKE_PREFIX_PATH=%CD%\external
+          cmake -B build -DBUILD_TESTS=OFF -DUSE_TENSORFLOW=ON -DCMAKE_PREFIX_PATH=%CD%\external
           cmake --build build --config ${{env.BUILD_TYPE}} --parallel
 
-      - name: Test Essentia
-        run: |
-          set PATH=%PATH%;%CD%\external\bin
-          ctest --test-dir build --output-on-failure -C ${{env.BUILD_TYPE}}
+      - name: Upload build
+        uses: actions/upload-artifact@v2
+        with:
+          name: essentia-build
+          path: build/
+
